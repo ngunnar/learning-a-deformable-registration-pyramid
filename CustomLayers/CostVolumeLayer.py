@@ -10,7 +10,11 @@ class CostVolume(layers.Layer):
         self.search_range = search_range
         self.concat = Concatenate(axis=4)
         self.leaky_relu = LeakyReLU(alpha = 0.1)
-        
+    
+    def get_config(self):
+        config = super(CostVolume, self).get_config()
+        config.update({"search_range": self.search_range})
+        return config
     def build(self, input_shape):
         super(CostVolume, self).build(input_shape)
         self.trainable = False

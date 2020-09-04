@@ -3,16 +3,21 @@ import os
 import glob
 import numpy as np
 from .CustomDataGenerator import CustomDataGenerator
+from .utils import load_pairs
 
 valid_items = ['0001', '0004']
 
 class Task3Generator():
-    def __init__(self, config, debug = False, shuffle=True, size = None):
+    def __init__(self, config, debug = False, shuffle=True, size = None, val = False):
         print('Loading dataset...')
         dataset_root = config['dataset_root']
         val_split = config['val_split']
+        self.use_atlas = config['use_atlas']
         self.debug = debug
-        self.IDx = Task3Generator.get_idx(dataset_root, self.debug)
+        if val:
+            self.IDx = Task3Generator.get_val_idx(dataset_root, self.use_atlas)
+        else:
+            self.IDx = Task3Generator.get_idx(dataset_root, self.debug, self.use_atlas)
         
         if shuffle:
             np.random.shuffle(self.IDx)
@@ -40,13 +45,27 @@ class Task3Generator():
         batch_size = config['batch_size']
         lowest = config['lowest']
         last = config['last']
-        use_atlas = config['use_atlas']
         
-        self.train_generator = CustomDataGenerator(train_idx, depth, height, width, batch_size, lowest, last, use_atlas)
-        self.val_generator = CustomDataGenerator(val_idx, depth, height, width, batch_size, lowest, last, use_atlas)
-        
+        self.train_generator = CustomDataGenerator(train_idx, depth, height, width, batch_size, lowest, last)
+        self.val_generator = CustomDataGenerator(val_idx, depth, height, width, batch_size, lowest, last)
+    
+    def get_val_idx(dataset_root, use_atlas = True):
+        pairs_task = load_pairs(dataset_root+'/pairs_val.csv')
+        IDx = []
+        for _, row in pairs_task.iterrows():
+            fixed = dataset_root+'/Training/img/img{:04d}.nii.gz'.format(row['fixed'])
+            moving = dataset_root+'/Training/img/img{:04d}.nii.gz'.format(row['moving'])
+            fixed_label = dataset_root+'/Training/label/label{:04d}.nii.gz'.format(row['fixed'])
+            moving_label = dataset_root+'/Training/label/label{:04d}.nii.gz'.format(row['moving'])
+            if use_atlas:
+                IDx.append([fixed, moving, fixed_label, moving_label])
+                IDx.append([moving, fixed, moving_label, fixed_label])
+            else:
+                IDx.append([fixed, moving, None, None]) 
+                IDx.append([moving, fixed, None, None]) 
+        return IDx
 
-    def get_idx(dataset_root, debug = False):        
+    def get_idx(dataset_root, debug = False, use_atlas = True):        
         allImages = [f for f in glob.glob(dataset_root + '/Training/img/*.nii.gz', recursive= True)]
         allImages.sort()
         allLabel = [f for f in glob.glob(dataset_root + '/Training/label/*.nii.gz', recursive= True)]
@@ -67,5 +86,8 @@ class Task3Generator():
                     continue
                 moving = [s for s in allImages if n in s]
                 assert len(moving) == 1
-                IDx.append([fixed[0], moving[0], label, l])     
+                if use_atlas:
+                    IDx.append([fixed[0], moving[0], label, l])
+                else:
+                    IDx.append([fixed[0], moving[0], None, None])
         return IDx

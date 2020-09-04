@@ -4,15 +4,14 @@ import tensorflow as tf
 from tensorflow.python.framework.ops import Tensor, EagerTensor
 
 def mse_loss(y_true, y_pred):
-    mse = tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)
+    #mse = tf.keras.losses.MeanSquaredError(reduction=tf.keras.losses.Reduction.NONE)
+    mse = tf.keras.losses.MeanSquaredError()
     return mse(y_true, y_pred)
-
-
 
 
 def dice_coef_binary(y_true, y_pred, num_classes=2, smooth=1e-7):
     '''
-    Dice coefficient for 14 categories. Ignores background pixel label 0
+    Dice coefficient for X categories. Ignores background pixel label 0
     Pass to model as metric during compile statement
     '''
     y_true_f = K.flatten(K.one_hot(K.cast(y_true, 'int32'), num_classes=num_classes)[...,1:])
@@ -27,6 +26,14 @@ def dice_coef_binary_loss(y_true, y_pred):
     Dice loss to minimize. Pass to model as loss during compile statement
     '''
     return 1 - dice_coef_binary(y_true, y_pred)
+
+
+# Only works for 2D
+class SSIM():
+    
+    def loss(self, y_true, y_pred):
+        print(y_true.shape, y_pred.shape)
+        return 1 - tf.reduce_mean(tf.image.ssim_multiscale(y_true, y_pred, 1.0))
 
 
 class Dice():

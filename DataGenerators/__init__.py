@@ -5,3 +5,5 @@ from .Task2Generator import Task2Generator
 from .Task3Generator import Task3Generator
 from .Task4Generator import Task4Generator
 from .MergeDataGenerator import MergeDataGenerator
+from .DebugDataGenerator import DebugDataGenerator
+from .utils import load_pairs

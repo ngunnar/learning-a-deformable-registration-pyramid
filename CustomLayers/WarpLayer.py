@@ -21,6 +21,10 @@ class Warp(Layer):
         super(Warp, self).__init__(name=name, **kwargs)
         self.warp = nrn_layers.SpatialTransformer(interp_method='linear', indexing='ij',single_transform=False)
     
+    def get_config(self):
+        config = super(Warp, self).get_config()
+        return config
+    
     def build(self, input_shape):
         super(Warp, self).build(input_shape)
         self.trainable = False       
@@ -28,7 +32,8 @@ class Warp(Layer):
     def call(self, inputs):
         x = inputs[0]
         flo = inputs[1]
-        assert x.shape[0] == flo.shape[0], 'x: {0}, flo: {1}'.format(x.shape, flo.shape)
+        
+        #assert x.shape[0] == flo.shape[0], 'x: {0}, flo: {1}'.format(x.shape, flo.shape)
         assert x.shape[1] == flo.shape[1], 'x: {0}, flo: {1}'.format(x.shape, flo.shape)
         assert x.shape[2] == flo.shape[2], 'x: {0}, flo: {1}'.format(x.shape, flo.shape)
         assert x.shape[3] == flo.shape[3], 'x: {0}, flo: {1}'.format(x.shape, flo.shape)
@@ -40,6 +45,7 @@ class Warp(Layer):
         assert flo.shape[1] > 2, flo.shape[1]
         assert flo.shape[2] > 2, flo.shape[2]
         assert flo.shape[3] > 2, flo.shape[3]
+        
         out = self.warp([x, flo])
         return out
     

@@ -10,7 +10,12 @@ class Resize(Layer):
         super(Resize, self).__init__(name=name, **kwargs)
         self.scalar = scalar
         self.resize = nrn_layers.Resize(zoom_factor=factor)
-        
+    
+    def get_config(self):
+        config = super(Resize, self).get_config()
+        config.update({"scalar": self.scalar} )
+        return config    
+    
     def build(self, input_shape):
         super(Resize, self).build(input_shape)
         
