@@ -14,6 +14,7 @@ from CustomLayers.UpsamplingLayer import Upsampling
 from CustomLayers.ContextLayer import Context
 from CustomLayers.ResizeLayer import Resize
 from CustomLayers.AffineLayer import Affine
+from CustomLayers.TransformAffineFlowLayer import TransformAffineFlow
 from tensorflow.keras.layers import Concatenate
 import losses
 
@@ -36,7 +37,7 @@ def create_model(config, name):
     
     useDenseNet = config['use_dense_net']
     useContextNet = config['use_context_net']
-    batch_size = config['batch_size']
+    #batch_size = None#config['batch_size']
     depth = config['depth']
     height = config['height']
     width = config['width']
@@ -89,6 +90,7 @@ def create_model(config, name):
     ### Creating model ##
     fixed = tf.keras.layers.Input(shape=(depth, height, width, 1), name='fixed_img')
     moving = tf.keras.layers.Input(shape=(depth, height, width, 1), name='moving_img')
+    batch_size = tf.shape(fixed)[0]
     
     inputs = [fixed, moving]
     if use_atlas:
@@ -99,30 +101,27 @@ def create_model(config, name):
     out2 = pyramid(moving)
     
     up_flow, up_feat = None, None
+    flow = None
     outputs = []
     loss = []
     loss_weights = []
-    identity = tf.tile(tf.constant([[1,0,0,0,0,1,0,0,0,0,1,0]], shape=[1,12], dtype='float32'), (batch_size,1))
     for i in range(1, lowest - last + 3):
         l = lowest + 1 - i
         s = 2.0
         x_dim = depth // (2**l)
         y_dim = height // (2**l)
         z_dim = width // (2**l)
+        shape = (x_dim, y_dim, z_dim, 3)
         if i != 1:
             flow = up_flow * s
             warp = warps_1[l-1]([out2[l], flow])
         else:
-            flow = tf.zeros((batch_size,x_dim, y_dim, z_dim, 3))
+            flow = Lambda(lambda x: tf.zeros(x, dtype='float32'))((batch_size, *shape))
             warp = out2[l]
         
         if use_affine:
             a_flow = affines[l]([out1[l], warp])
-            a_flow = tf.reshape(a_flow, (-1, 12)) + identity
-            a_flow = tf.reshape(a_flow, (batch_size, 3, 4))
-            flow = tf.concat((flow, tf.ones((1, x_dim, y_dim, z_dim, 1))), -1)
-            flow = tf.matmul(tf.reshape(flow, (batch_size, -1, 4)), a_flow, transpose_b=True)
-            flow = tf.reshape(flow, (batch_size, x_dim, y_dim, z_dim, 3))
+            flow = TransformAffineFlow(shape)([a_flow, flow])
             warp = warps_2[l]([warp, flow])
         
         if use_def or l == 0:

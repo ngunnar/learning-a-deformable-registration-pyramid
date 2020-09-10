@@ -1,4 +1,5 @@
 # __init__.py
+from .TensorflowDatasetLoader import TensorflowDatasetLoader
 from .CustomDataGenerator import CustomDataGenerator
 from .Task1Generator import Task1Generator
 from .Task2Generator import Task2Generator

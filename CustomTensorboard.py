@@ -7,6 +7,7 @@ import tensorflow.keras.backend as K
 import tensorflow as tf
 import numpy as np
 import re
+import copy
 
 def Tensorboard_callback(log_dir, config, ds, model):
     class CustomTensorBoard(TensorBoard):
@@ -14,7 +15,7 @@ def Tensorboard_callback(log_dir, config, ds, model):
             super().__init__(**kwargs)
         
         def on_epoch_end(self, epoch, logs={}):
-            iterations = epoch * len(ds.train_generator)             
+            iterations = epoch * len(train_idxs)             
             
             def image2d(img, axis):
                 if axis==0:
@@ -45,13 +46,21 @@ def Tensorboard_callback(log_dir, config, ds, model):
                         axs[i*3 + 2].contour(image2d(warped_label, i%3))
             
             def _get_img(images, labels, idx, epoch):
-                fixed = images[:,0,...]
-                moving = images[:,1,...]
+                if isinstance(images, list):
+                    fixed = images[0][None,...]
+                    moving = images[1][None,...]
+                else:
+                    fixed = images[:,0,...]
+                    moving = images[:,1,...]
                 inputs = [fixed, moving]
 
                 if labels is not None:
-                    fixed_label = labels[:,0,...]
-                    moving_label = labels[:,1,...]
+                    if isinstance(labels, list):
+                        fixed_label = labels[0][None,...]
+                        moving_label = labels[1][None,...]
+                    else:
+                        fixed_label = labels[:,0,...]
+                        moving_label = labels[:,1,...]
                     inputs.append(moving_label)
                 else:
                     fixed_label = None
@@ -91,7 +100,7 @@ def Tensorboard_callback(log_dir, config, ds, model):
                 imgs_train.append(_get_img(t_img, t_label, i, epoch))
             #img_train = _get_img(train_imgs, train_labels, idx_train, epoch)
             
-            if len(ds.val_generator) > 0:
+            if len(ds.val_generator.idxs) > 0:
                 imgs_val = []
                 for t_img, t_label, i in val_data:
                     imgs_val.append(_get_img(t_img, t_label, i, epoch))
@@ -111,27 +120,31 @@ def Tensorboard_callback(log_dir, config, ds, model):
     
     # Tensorboard
     logdir = os.path.join("logs", log_dir)
+    train_idxs = ds.train_generator.idxs.copy()
+    train_idxs.sort()
     #idx_train = ds.train_generator.idxs[0]
-    tasks = np.unique([''.join(re.split('(task_\d+)', i[0])[0:2]) for i in ds.train_generator.idxs])
+    tasks = np.unique([''.join(re.split('(task_\d+)', i[0])[0:2]) for i in train_idxs])
     tasks.sort()
     train_data = []
     for task in tasks:
-        for i in ds.train_generator.idxs:
+        for i in train_idxs:
             if i[0].find(task) == 0:
-                d = list(ds.train_generator._get_train_samples(idx=[i]))
+                d = list(ds.train_generator._get_train_samples(idx=i))
                 d.append(i)
                 train_data.append(d)
                 break
     #train_imgs, train_labels = ds.train_generator._get_train_samples(idx=[idx_train])
     
-    if len(ds.val_generator) > 0:
-        tasks = np.unique([''.join(re.split('(task_\d+)', i[0])[0:2]) for i in ds.val_generator.idxs])
+    if len(ds.val_generator.idxs) > 0:
+        val_idxs = ds.val_generator.idxs.copy()
+        val_idxs.sort()
+        tasks = np.unique([''.join(re.split('(task_\d+)', i[0])[0:2]) for i in val_idxs])
         tasks.sort()
         val_data = []
         for task in tasks:
-            for i in ds.val_generator.idxs:
+            for i in val_idxs:
                 if i[0].find(task) == 0:
-                    d = list(ds.val_generator._get_train_samples(idx=[i]))
+                    d = list(ds.val_generator._get_train_samples(idx=i))
                     d.append(i)
                     train_data.append(d)
                     break

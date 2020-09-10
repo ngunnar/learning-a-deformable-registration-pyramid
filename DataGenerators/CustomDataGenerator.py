@@ -46,7 +46,8 @@ class CustomDataGenerator(tf.keras.utils.Sequence):
         inp, out = [], []
         l = 0
         for i in range(1, self.lowest - self.last + 2):
-            out_flow = resize(zeros[0,:,:,:,0], tuple([x//(2**i) for x in self.input_dim]), mode='constant')[None,:,:,:,None]
+            l = self.lowest + 1 - i
+            out_flow = resize(zeros[0,:,:,:,0], tuple([x//(2**l) for x in self.input_dim]), mode='constant')[None,:,:,:,None]
             out_flow = np.repeat(out_flow, 3, axis=-1)
             out_flow = np.repeat(out_flow, self.batch_size, axis=0)
             out.append(tf.convert_to_tensor(out_flow))

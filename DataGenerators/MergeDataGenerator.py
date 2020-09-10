@@ -1,9 +1,10 @@
 import numpy as np
 from .CustomDataGenerator import CustomDataGenerator
+from .TensorflowDatasetLoader import TensorflowDatasetLoader
 
 class MergeDataGenerator():
     
-    def __init__(self, generators, config, debug, size = None, shuffle=True, val = False):
+    def __init__(self, generators, config, debug, size = None, shuffle=True, val = False, test = False):
         print('Loading dataset...')
         val_split = config['val_split']
         self.use_atlas = config['use_atlas']
@@ -20,11 +21,13 @@ class MergeDataGenerator():
                 
             if size:
                 idx = idx[0:size] 
-            self.IDx.extend(idx)
             
             if shuffle:
-                np.random.shuffle(self.IDx)
+                #np.random.shuffle(self.IDx)
+                np.random.shuffle(idx)
             
+            self.IDx.extend(idx)
+
             train_size = int(len(idx) * (1-val_split))            
             train_idx = idx[0:train_size]
             val_idx = idx[train_size:] 
@@ -43,12 +46,19 @@ class MergeDataGenerator():
         
         print('Training set: {0}, Validation set: {1}'.format(len(train_idxs), len(val_idxs)))
         
+        if shuffle:
+            np.random.shuffle(train_idxs)
+            np.random.shuffle(val_idx)
+        
         depth = config['depth']
         height = config['height']
         width = config['width']
         batch_size = config['batch_size']
         lowest = config['lowest']
         last = config['last']
-
-        self.train_generator = CustomDataGenerator(train_idxs, depth, height, width, batch_size, lowest, last)
-        self.val_generator = CustomDataGenerator(val_idxs, depth, height, width, batch_size, lowest, last)
+        if test:
+            self.train_generator = TensorflowDatasetLoader(train_idxs, depth, height, width, batch_size, lowest, last, True)
+            self.val_generator = TensorflowDatasetLoader(val_idxs, depth, height, width, batch_size, lowest, last, True)
+        else:            
+            self.train_generator = CustomDataGenerator(train_idxs, depth, height, width, batch_size, lowest, last)
+            self.val_generator = CustomDataGenerator(val_idxs, depth, height, width, batch_size, lowest, last)

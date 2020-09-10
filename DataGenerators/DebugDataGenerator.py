@@ -5,7 +5,7 @@ import nibabel as nib
 from skimage.transform import resize
 import copy
 from scipy import ndimage
-from debugUtil import sphere, random_deformation_linear
+from debug_utils import sphere, random_deformation_linear
 import neuron.layers as nrn_layers
 
 class DebugDataGenerator(tf.keras.utils.Sequence):

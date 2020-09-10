@@ -9,6 +9,26 @@ def mse_loss(y_true, y_pred):
     return mse(y_true, y_pred)
 
 
+def dice_coe(output, target, loss_type='jaccard', axis=(1, 2, 3), smooth=1e-5):
+    inse = tf.reduce_sum(output * target, axis=axis)
+    if loss_type == 'jaccard':
+        l = tf.reduce_sum(output * output, axis=axis)
+        r = tf.reduce_sum(target * target, axis=axis)
+    elif loss_type == 'sorensen':
+        l = tf.reduce_sum(output, axis=axis)
+        r = tf.reduce_sum(target, axis=axis)
+    else:
+        raise Exception("Unknow loss_type")
+    # old axis=[0,1,2,3]
+    # dice = 2 * (inse) / (l + r)
+    # epsilon = 1e-5
+    # dice = tf.clip_by_value(dice, 0, 1.0-epsilon) # if all empty, dice = 1
+    # new haodong
+    dice = (2. * inse + smooth) / (l + r + smooth)
+    ##
+    dice = tf.reduce_mean(dice, name='dice_coe')
+    return dice
+
 def dice_coef_binary(y_true, y_pred, num_classes=2, smooth=1e-7):
     '''
     Dice coefficient for X categories. Ignores background pixel label 0
@@ -25,7 +45,7 @@ def dice_coef_binary_loss(y_true, y_pred):
     '''
     Dice loss to minimize. Pass to model as loss during compile statement
     '''
-    return 1 - dice_coef_binary(y_true, y_pred)
+    return 1 - dice_coe(y_true, y_pred)
 
 
 # Only works for 2D
@@ -45,11 +65,14 @@ class Dice():
         #self.num_classes = num_classes
 
     def loss(self, y_true, y_pred):
+        '''
         if isinstance(y_true, EagerTensor):
             num_classes = len(tf.unique(tf.reshape(y_true, [-1]))[0])
         else:
             num_classes = 2
-        return 1 - dice_coef_binary(y_true, y_pred, num_classes)
+        '''
+        return 1 - dice_coe(y_true, y_pred)
+        #return 1 - dice_coef_binary(y_true, y_pred, num_classes)
     
     
 def _diffs(y):
