@@ -21,6 +21,7 @@ def main():
     for file in glob.glob(os.path.join(INPUT_FOLDER, 'task_01', '*.npy')):
         print('compressing {}...'.format(file))
         disp = np.load(file) #expects shape 3x256x256x288
+        assert disp.shape == (3,256,256,288), disp.shape
         disp_x = zoom(disp[0], 0.5, order=2).astype('float16')
         disp_y = zoom(disp[1], 0.5, order=2).astype('float16')
         disp_z = zoom(disp[2], 0.5, order=2).astype('float16')
@@ -30,6 +31,7 @@ def main():
     for file in glob.glob(os.path.join(INPUT_FOLDER, 'task_02', '*.npy')):
         print('compressing {}...'.format(file))
         disp = np.load(file) #expects shape 3x192x192x208
+        assert disp.shape == (3,192,192,208), disp.shape
         disp_x = zoom(disp[0], 0.5, order=2).astype('float16')
         disp_y = zoom(disp[1], 0.5, order=2).astype('float16')
         disp_z = zoom(disp[2], 0.5, order=2).astype('float16')
@@ -39,6 +41,7 @@ def main():
     for file in glob.glob(os.path.join(INPUT_FOLDER, 'task_03', '*.npy')):
         print('compressing {}...'.format(file))
         disp = np.load(file) #expects shape 3x192x160x256
+        assert disp.shape == (3,192,160,256), disp.shape
         disp_x = zoom(disp[0], 0.5, order=2).astype('float16')
         disp_y = zoom(disp[1], 0.5, order=2).astype('float16')
         disp_z = zoom(disp[2], 0.5, order=2).astype('float16')
@@ -48,6 +51,7 @@ def main():
     for file in glob.glob(os.path.join(INPUT_FOLDER, 'task_04', '*.npy')):
         print('compressing {}...'.format(file))
         disp = np.load(file) #expects shape 3x64x64x64
+        assert disp.shape == (3,64,64,64), disp.shape
         disp = disp.astype('float16')
         np.savez_compressed(file.replace(INPUT_FOLDER, OUTPUT_FOLDER).replace('npy', 'npz'), disp)
         

@@ -90,7 +90,7 @@ def create_model(config, name):
     ### Creating model ##
     fixed = tf.keras.layers.Input(shape=(depth, height, width, 1), name='fixed_img')
     moving = tf.keras.layers.Input(shape=(depth, height, width, 1), name='moving_img')
-    batch_size = tf.shape(fixed)[0]
+    batch_size = tf.shape(fixed, name='batch_size')[0]
     
     inputs = [fixed, moving]
     if use_atlas:

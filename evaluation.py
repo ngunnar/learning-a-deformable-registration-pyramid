@@ -12,10 +12,10 @@ from surface_distance import *
 
 ##### paths #####
 
-DEFAULT_INPUT_PATH = Path("/input/")
+DEFAULT_INPUT_PATH = Path("./submission_compressed/")
 #DEFAULT_GROUND_TRUTH_PATH = Path("/opt/evaluation/ground-truth/")
 DEFAULT_GROUND_TRUTH_PATH = Path("/data/Niklas/Learn2Reg")
-DEFAULT_EVALUATION_OUTPUT_FILE_PATH = Path("/output/metrics.json")
+DEFAULT_EVALUATION_OUTPUT_FILE_PATH = Path("./output/metrics.json")
 
 ##### metrics #####
 

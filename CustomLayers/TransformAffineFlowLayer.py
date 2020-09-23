@@ -15,10 +15,7 @@ class TransformAffineFlow(Layer):
         identity = np.array([[1,0,0,0,0,1,0,0,0,0,1,0]], 'float32')
         identity = tf.convert_to_tensor(identity)
         x = x + identity
-        return x
-    
-    #def init_flow(shape):
-    #    return tf.zeros(shape,dtype='float32')  
+        return x  
     
     def get_ones(shape):
         return tf.ones(shape,dtype='float32')  
@@ -27,10 +24,6 @@ class TransformAffineFlow(Layer):
         a_flow = inputs[0]
         batch_size = tf.shape(a_flow)[0]
         flow = inputs[1]
-        #if len(inputs) > 1:
-        #    flow = inputs[1]
-        #else:
-        #    flow = Lambda(TransformAffineFlow.init_flow)((batch_size, *self.shape))
         ones = Lambda(TransformAffineFlow.get_ones)((batch_size, *self.shape[0:3], 1))
         a_flow = Lambda(TransformAffineFlow.add_identity)(a_flow)
         a_flow = tf.reshape(a_flow, (batch_size, 3, 4))

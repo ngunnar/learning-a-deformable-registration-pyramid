@@ -10,6 +10,8 @@ class DefReg(Regularizer):
     # Arguments
         alpha: Float; regularization factor.
         value: Float; penalize if different than value
+        
+    https://github.com/TheoEst/coupling_registration_segmentation/blob/master/blocks.py
     """
 
     def __init__(self, alpha=1e-5, value=0):

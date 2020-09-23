@@ -57,10 +57,10 @@ class Task1Generator():
             fixed_FLAIR = dataset_root+'/EASY-RESECT/NIFTI/Case{0}/Case{0}-FLAIR-resize.nii'.format(row['fixed'])
             fixed_T1 = dataset_root+'/EASY-RESECT/NIFTI/Case{0}/Case{0}-T1-resize.nii'.format(row['moving'])
             moving_US = dataset_root+'/EASY-RESECT/NIFTI/Case{0}/Case{0}-US-before-resize.nii'.format(row['moving'])
-            #IDx.append([fixed_FLAIR, moving_US, None, None])
+            IDx.append([fixed_FLAIR, moving_US, None, None])
             #IDx.append([fixed_T1, moving_US, None, None])
-            IDx.append([fixed_FLAIR, fixed_T1, None, None])
-            IDx.append([fixed_T1, fixed_FLAIR, None, None])
+            #IDx.append([fixed_FLAIR, fixed_T1, None, None])
+            #IDx.append([fixed_T1, fixed_FLAIR, None, None])
         return IDx
 
     def get_idx(dataset_root, debug = False, use_atlas = False):

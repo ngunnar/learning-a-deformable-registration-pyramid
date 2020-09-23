@@ -146,7 +146,7 @@ def Tensorboard_callback(log_dir, config, ds, model):
                 if i[0].find(task) == 0:
                     d = list(ds.val_generator._get_train_samples(idx=i))
                     d.append(i)
-                    train_data.append(d)
+                    val_data.append(d)
                     break
         #idx_val = ds.val_generator.idxs[0]
         #val_imgs, val_labels = ds.val_generator._get_train_samples(idx=[idx_val])
