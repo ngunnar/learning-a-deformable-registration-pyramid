@@ -2,28 +2,28 @@ import numpy as np
 from .CustomDataGenerator import CustomDataGenerator
 from .TensorflowDatasetLoader import TensorflowDatasetLoader
 
-class MergeDataGenerator():
-    
-    def __init__(self, generators, config, debug, size = None, shuffle=True, val = False, test = False):
+class MergeDataGenerator():    
+    def __init__(self, generators, config, size = None, shuffle=True, t_type = 'train'):
         print('Loading dataset...')
+        assert t_type in ['test', 'train', 'val'], t_type
         val_split = config['val_split']
-        self.use_atlas = config['use_atlas']
-        self.debug = debug
+        use_atlas = config['use_atlas']
         
         self.IDx = []
         train_idxs = []
         val_idxs = []
         for g, p in generators:
-            if val:
-                idx = g.get_val_idx(p, self.use_atlas)
+            if t_type == 'test':
+                idx = g.get_test_idx(p)
+            elif t_type == 'train':
+                idx = g.get_train_idx(p, use_atlas)
             else:
-                idx = g.get_idx(p, self.debug, self.use_atlas)
+                idx = g.get_val_idx(p)
                 
             if size:
                 idx = idx[0:size] 
             
             if shuffle:
-                #np.random.shuffle(self.IDx)
                 np.random.shuffle(idx)
             
             self.IDx.extend(idx)
@@ -56,9 +56,6 @@ class MergeDataGenerator():
         batch_size = config['batch_size']
         lowest = config['lowest']
         last = config['last']
-        if test:
-            self.train_generator = TensorflowDatasetLoader(train_idxs, depth, height, width, batch_size, lowest, last, True)
-            self.val_generator = TensorflowDatasetLoader(val_idxs, depth, height, width, batch_size, lowest, last, True)
-        else:            
-            self.train_generator = CustomDataGenerator(train_idxs, depth, height, width, batch_size, lowest, last)
-            self.val_generator = CustomDataGenerator(val_idxs, depth, height, width, batch_size, lowest, last)
+        
+        self.train_generator = TensorflowDatasetLoader(train_idxs, depth, height, width, batch_size, lowest, last, use_atlas)
+        self.val_generator = TensorflowDatasetLoader(val_idxs, depth, height, width, batch_size, lowest, last, use_atlas)

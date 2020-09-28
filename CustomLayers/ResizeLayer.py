@@ -1,7 +1,6 @@
 from __future__ import absolute_import, division, print_function
 
 import tensorflow as tf
-import Utils.tensorflow_addons as tfimg
 from tensorflow.keras.layers import Layer
 import neuron.layers as nrn_layers
 

@@ -319,6 +319,9 @@ class NCC():
 
     def loss(self, I, J):
         return - self.ncc(I, J)
+    
+    def loss_with_mse(self, I, J):
+        return self.loss(I,J) + tf.keras.losses.mean_squared_error(I,J)
         
 class Grad():
     """

@@ -50,12 +50,12 @@ def create_model(config, name):
     use_def = config['use_def']
     
     d_l = config['data_loss']
-    assert d_l in ['mse', 'cc', 'ncc', 'ssim'], 'Loss should be one of mse or cc, found %s' % data_loss
+    assert d_l in ['mse', 'cc', 'ncc', 'mse_ncc'], 'Loss should be one of mse or cc, found %s' % data_loss
     
     if d_l in ['ncc', 'cc']:
         d_l = losses.NCC().loss
-    elif d_l == 'ssim':
-        d_l = losses.SSIM().loss
+    elif d_l == 'mse_ncc':
+        d_l = losses.NCC().loss_with_mse
     else:
         #d_l = tf.keras.losses.MeanSquaredError(reduction='none')
         d_l = tf.keras.losses.MeanSquaredError()
@@ -123,6 +123,10 @@ def create_model(config, name):
             a_flow = affines[l]([out1[l], warp])
             flow = TransformAffineFlow(shape)([a_flow, flow])
             warp = warps_2[l]([warp, flow])
+            flow = Lambda(lambda x:x, name = "est_aff_flow{0}".format(l))(flow)
+            outputs.append(flow)
+            loss.append(losses.Grad('l2').loss)
+            loss_weights.append(config['alphas'][l])
         
         if use_def or l == 0:
             cv = cost([out1[l], warp])
@@ -142,7 +146,7 @@ def create_model(config, name):
         if l != 0:
             outputs.append(flow)
             loss.append(losses.Grad('l2').loss)
-            loss_weights.append(config['lambdas'][l])
+            loss_weights.append(config['betas'][l])
             r = Resize(scalar = 1.0, factor = 1/(2**l), name='p_score_{0}'.format(l))
             warp_moving = Warp(name='warp_m_{0}'.format(i+1))([r(moving), flow])
             #o = Concatenate(axis=-1, name='sim_{0}'.format(l))([out1[l], warp])
@@ -164,7 +168,7 @@ def create_model(config, name):
     warped = Warp(name='sim')([moving, flow_est])    
     outputs.append(flow_est)
     loss.append(losses.Grad('l2').loss)
-    loss_weights.append(config['lambdas'][0])
+    loss_weights.append(config['betas'][0])
     
     outputs.append(warped)
     loss.append(d_l)
@@ -176,8 +180,6 @@ def create_model(config, name):
         loss.append(losses.Dice().loss)
         loss_weights.append(config['atlas_wt'])
     
-    #input_shape = [i.shape for i in inputs]
-    #outputs_shape = [i.shape for i in outputs]
     return Model(inputs=inputs, outputs=outputs, name=name), loss, loss_weights
 
 

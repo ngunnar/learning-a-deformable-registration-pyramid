@@ -31,19 +31,19 @@ def Tensorboard_callback(log_dir, config, ds, model):
                     axs[i*3].axis('off')
                     axs[i*3].imshow(image2d(fixed, i%3), cmap='gray')                    
                     if fixed_label is not None:
-                        axs[i*3].contour(image2d(fixed_label, i%3))
+                        axs[i*3].contour(image2d(fixed_label, i%3).astype('int'))
                     
                     axs[i*3 + 1].title.set_text('Moving image')
                     axs[i*3 + 1].axis('off')
                     axs[i*3 + 1].imshow(image2d(moving, i%3), cmap='gray')
                     if moving_label is not None:
-                        axs[i*3 + 1].contour(image2d(moving_label, i%3))
+                        axs[i*3 + 1].contour(image2d(moving_label, i%3).astype('int'))
                      
                     axs[i*3 + 2].title.set_text('Warped image')
                     axs[i*3 + 2].axis('off')
                     axs[i*3 + 2].imshow(image2d(warped, i%3), cmap='gray')
                     if warped_label is not None:
-                        axs[i*3 + 2].contour(image2d(warped_label, i%3))
+                        axs[i*3 + 2].contour(image2d(warped_label, i%3).numpy().astype('int'))
             
             def _get_img(images, labels, idx, epoch):
                 if isinstance(images, list):
@@ -121,14 +121,14 @@ def Tensorboard_callback(log_dir, config, ds, model):
     # Tensorboard
     logdir = os.path.join("logs", log_dir)
     train_idxs = ds.train_generator.idxs.copy()
-    train_idxs.sort()
+    train_idxs.sort(key=lambda x: x[0][0])
     #idx_train = ds.train_generator.idxs[0]
-    tasks = np.unique([''.join(re.split('(task_\d+)', i[0])[0:2]) for i in train_idxs])
+    tasks = np.unique([''.join(re.split('(task_\d+)', i[0][0])[0:2]) for i in train_idxs])
     tasks.sort()
     train_data = []
     for task in tasks:
         for i in train_idxs:
-            if i[0].find(task) == 0:
+            if i[0][0].find(task) == 0:
                 d = list(ds.train_generator._get_train_samples(idx=i))
                 d.append(i)
                 train_data.append(d)
@@ -137,13 +137,13 @@ def Tensorboard_callback(log_dir, config, ds, model):
     
     if len(ds.val_generator.idxs) > 0:
         val_idxs = ds.val_generator.idxs.copy()
-        val_idxs.sort()
-        tasks = np.unique([''.join(re.split('(task_\d+)', i[0])[0:2]) for i in val_idxs])
+        val_idxs.sort(key=lambda x: x[0][0])
+        tasks = np.unique([''.join(re.split('(task_\d+)', i[0][0])[0:2]) for i in val_idxs])
         tasks.sort()
         val_data = []
         for task in tasks:
             for i in val_idxs:
-                if i[0].find(task) == 0:
+                if i[0][0].find(task) == 0:
                     d = list(ds.val_generator._get_train_samples(idx=i))
                     d.append(i)
                     val_data.append(d)
