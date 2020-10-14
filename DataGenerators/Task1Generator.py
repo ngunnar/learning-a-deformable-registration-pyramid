@@ -52,8 +52,8 @@ class Task1Generator():
             assert len(moving) == 1, moving
             moving = moving[0]
             for flip_ax in range(-1,3):
-                for rot_ang in [-10, 0, 10]:
-                    IDx.append([[fixed, None, [0, None]], 
-                                    [moving, None, [rot_ang, np.random.choice(3, 2, replace=False)]],
-                                    flip_ax, None, Task1Generator.get_task_number()])
+                #for rot_ang in [-10, 0, 10]:
+                IDx.append([[fixed, None, [0, None]], 
+                            [moving, None, [0, None]],
+                            flip_ax, None, Task1Generator.get_task_number()])
         return IDx    

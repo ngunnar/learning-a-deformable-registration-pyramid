@@ -1,4 +1,3 @@
-from PWC_model import create_model, get_default_pyramid
 from create_model import create_model
 import tensorflow as tf
 import losses
@@ -12,8 +11,8 @@ import tensorflow.keras.backend as K
 import os
 os.environ["CUDA_VISIBLE_DEVICES"]="1,3"
 
-task = [1]
-use_atlas = False
+task = [2]
+use_atlas = True
 config = {
     'depth': 64,
     'height': 64,
@@ -21,13 +20,13 @@ config = {
     'batch_size': 1,
     'ds_size':None,
     'use_affine': True,
-    'use_def': False,
+    'use_def': True,
     'use_dense_net': True,    
     'use_context_net': False,
     'val_split':0,
     'epochs':100,
     'lr':1e-5,
-    'weights': None,
+    'weights': './Models/pretrained_model',
     'use_atlas': use_atlas,
     'atlas_wt': 0,
     'seg_loss': 'dice',
@@ -43,7 +42,7 @@ config = {
 config['alphas'] = [1.0, 0.25, 0.05, 0.0125, 0.002]
 config['betas'] = [1.0, 0.25, 0.05, 0.0125, 0.002]
 
-config['alphas'] = [i for i in config['alphas']]
+config['alphas'] = [i*0.1 for i in config['alphas']]
 config['betas'] = [i*3 for i in config['betas']]
 if config['data_loss'] == 'mse':
     config['reg_params'] = [50.0, 5.0, 2.5, 1.0, 0.5]
@@ -73,30 +72,23 @@ num_batches = int(len(ds.train_generator.idxs)/config['batch_size'])
 dt = datetime.now().strftime("%Y%m%d-%H%M%S")
 log_dir = "{0}_{1}_{2}".format('task{0}'.format(''.join(map(str,task))), config['data_loss'], dt)
 model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-    filepath='./Task_models/'+ dt +'/'+log_dir,
+    filepath='./Models/task2_best',
     save_weights_only=True,
     monitor='loss',
     mode='min',
     save_best_only=True)
 
-model_checkpoint_callback_val = tf.keras.callbacks.ModelCheckpoint(
-    filepath='./Task_models/'+ dt +'/'+log_dir + '_val',
-    save_weights_only=True,
-    monitor='val_loss',
-    mode='min',
-    save_best_only=True)
-
 with mirrored_strategy.scope():
-    model, loss, loss_weights = create_model(config = config, name="PWC_Net", task=2)
+    model, loss, loss_weights = create_model(config = config, name="Model")
     if config['weights'] is not None:
         model.load_weights(config['weights']).expect_partial()
     tensorboard = Tensorboard_callback(log_dir, config, ds, model)
     lr_scheduler = LR_scheduler(config['lr'], config['epochs'])
     model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=config['lr']), loss=loss, loss_weights=loss_weights)
     model.fit(ds.train_generator.dataset,
-                  callbacks = [tensorboard, lr_scheduler, model_checkpoint_callback, model_checkpoint_callback_val],
+                  callbacks = [tensorboard, lr_scheduler, model_checkpoint_callback],
                   epochs= config['epochs'], 
                   steps_per_epoch = num_batches,
                   validation_data = ds.val_generator.dataset,
                   validation_steps = config['batch_size'])
-    model.save_weights('task1_model')
+    model.save_weights('./Models/task2_model_new')

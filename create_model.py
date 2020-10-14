@@ -27,7 +27,7 @@ import tensorflow as tf
 import numpy as np
 
 
-def create_model(config, name, task):
+def create_model(config, name):
     
     def w_loss(loss):
         def l(_, yp):
@@ -53,7 +53,7 @@ def create_model(config, name, task):
     assert d_l in ['mse', 'cc', 'ncc'], 'Loss should be one of mse or cc, found %s' % data_loss
     
     if d_l in ['ncc', 'cc']:
-        d_l = losses.NCC(task=task).loss
+        d_l = losses.NCC().loss
     else:
         #d_l = tf.keras.losses.MeanSquaredError(reduction='none')
         d_l = tf.keras.losses.MeanSquaredError()

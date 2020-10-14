@@ -68,16 +68,16 @@ class Task2Generator():
                 assert len(exp_img) == 1
                 for flip_ax in range(-1,3):
                     if use_atlas:
-                        #IDx.append([[insp_img[0], label, [0, None]], 
-                        #            [exp_img[0], l, [0, None]],
-                        #            flip_ax, None, Task2Generator.get_task_number()])
+                        IDx.append([[insp_img[0], label, [0, None]], 
+                                    [exp_img[0], l, [0, None]],
+                                    flip_ax, None, Task2Generator.get_task_number()])
                         IDx.append([[exp_img[0], l, [0, None]], 
                                     [insp_img[0], label, [0, None]], 
                                     flip_ax, None, Task2Generator.get_task_number()])
                     else:
-                        #IDx.append([[insp_img[0], None, [0, None]], 
-                        #            [exp_img[0], None, [0, None]], 
-                        #            flip_ax, None])
+                        IDx.append([[insp_img[0], None, [0, None]], 
+                                    [exp_img[0], None, [0, None]], 
+                                    flip_ax, None])
                         IDx.append([[exp_img[0], None, [0, None]], 
                                     [insp_img[0], None, [0, None]],
                                     flip_ax, None, Task2Generator.get_task_number()])

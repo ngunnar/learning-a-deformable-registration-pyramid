@@ -40,16 +40,6 @@ def dice_coef_binary(y_true, y_pred, num_classes=2, smooth=1e-7):
     return K.mean((2. * intersect / (denom + smooth)))
 
 
-
-
-# Only works for 2D
-class SSIM():
-    
-    def loss(self, y_true, y_pred):
-        print(y_true.shape, y_pred.shape)
-        return 1 - tf.reduce_mean(tf.image.ssim_multiscale(y_true, y_pred, 1.0))
-
-
 class Dice():
     """
     Dice binary loss
@@ -63,12 +53,10 @@ class NCC():
     local (over window) normalized cross correlation
     """
 
-    def __init__(self, task, last_dim = 1, win=None, eps=1e-5):
+    def __init__(self, last_dim = 1, win=None, eps=1e-5):
         self.win = win
         self.eps = eps
         self.last_dim = last_dim
-        self.task = task
-
 
     def ncc(self, I, J):
         # get dimension of volume
@@ -82,11 +70,6 @@ class NCC():
 
         # get convolution function
         conv_fn = getattr(tf.nn, 'conv%dd' % ndims)
-        
-        # TODO
-        #if self.task == 1:
-        #    J = J[J!=0]
-        #    I = I[J!=0]
         
         # compute CC squares
         I2 = I*I

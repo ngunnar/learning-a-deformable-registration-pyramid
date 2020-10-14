@@ -6,8 +6,6 @@ import tensorflow as tf
 import numpy as np
 from scipy import ndimage
 
-# TODO fix handling of use_label
-
 class TensorflowDatasetLoader:   
     def __init__(self, idxs, config):
         depth = config['depth']
@@ -19,7 +17,6 @@ class TensorflowDatasetLoader:
         use_label = config['use_atlas']
         self.use_affine = config['use_affine']
         self.use_def = config['use_def']
-        #self.use_label = use_label        
         self.idxs = idxs
         self.crop_img = False
 
