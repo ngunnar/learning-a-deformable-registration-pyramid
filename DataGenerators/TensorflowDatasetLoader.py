@@ -9,8 +9,17 @@ from scipy import ndimage
 # TODO fix handling of use_label
 
 class TensorflowDatasetLoader:   
-    def __init__(self, idxs, depth, height, width, batch_size, lowest, last, use_label):
-        self.use_label = use_label        
+    def __init__(self, idxs, config):
+        depth = config['depth']
+        height = config['height']
+        width = config['width']
+        batch_size = config['batch_size']
+        lowest = config['lowest']
+        last = config['last']
+        use_label = config['use_atlas']
+        self.use_affine = config['use_affine']
+        self.use_def = config['use_def']
+        #self.use_label = use_label        
         self.idxs = idxs
         self.crop_img = False
 
@@ -22,29 +31,36 @@ class TensorflowDatasetLoader:
             x_dim = depth // (2**l)
             y_dim = height // (2**l)
             z_dim = width // (2**l)
-            output_shape.append((x_dim, y_dim, z_dim,3)) # affine
-            output_shape.append((x_dim, y_dim, z_dim,3)) # deformable
+            if self.use_affine:
+                output_shape.append((x_dim, y_dim, z_dim,3)) # affine
+                output_types.append(tf.float32)
+            if self.use_def:
+                output_shape.append((x_dim, y_dim, z_dim,3)) # deformable
+                output_types.append(tf.float32)
             output_shape.append((x_dim, y_dim, z_dim,2)) # image sim placeholder
             output_types.append(tf.float32)
+        
+        if self.use_affine:
+            output_shape.append((*self.input_dim,3)) # affine
             output_types.append(tf.float32)
+        if self.use_def:
+            output_shape.append((*self.input_dim,3)) # deformable
             output_types.append(tf.float32)
-
-        output_shape.append((*self.input_dim,3)) # affine
-        output_types.append(tf.float32)
-        output_shape.append((*self.input_dim,3)) # deformable
-        output_types.append(tf.float32)
         
         output_shape.append((*self.input_dim,1)) # image sim
         output_types.append(tf.float32)
         
+        input_types = [tf.float32, tf.float32]
+        input_shape = [(*self.input_dim,1),(*self.input_dim,1)]
         if use_label:
             output_shape.append((*self.input_dim,1)) # seg
             output_types.append(tf.float32)
-
+            input_types.append(tf.float32)
+            input_shape.append((*self.input_dim,1))
         input_data = tf.data.Dataset.from_generator(
             self.generator(self.input_dim, lowest, last, idxs, True),
-            (tf.float32, tf.float32, tf.float32),
-            ((*self.input_dim,1),(*self.input_dim,1),(*self.input_dim,1)))
+            tuple(input_types),
+            tuple(input_shape))
 
         output_data = tf.data.Dataset.from_generator(
             self.generator(self.input_dim, lowest, last, idxs, False),
@@ -207,13 +223,16 @@ class TensorflowDatasetLoader:
                         out_flow = resize(zeros[...,0], tuple([x//(2**l) for x in input_dim]), mode='constant')[...,None]
                         out_flow1 = np.repeat(out_flow, 3, axis=-1)
                         out_flow2 = np.repeat(out_flow, 2, axis=-1)
-                        out.append(out_flow1) # Affine
-                        out.append(out_flow1) # Deformable
+                        if self.use_affine:
+                            out.append(out_flow1) # Affine
+                        if self.use_def:
+                            out.append(out_flow1) # Deformable
                         #DUMMY
                         out.append(out_flow2) # Placeholder for images sim
-                    
-                    out.append(zeros) # Affine
-                    out.append(zeros) # Deformable
+                    if self.use_affine:
+                        out.append(zeros) # Affine
+                    if self.use_def:
+                        out.append(zeros) # Deformable
                     out.append(fixed) # Image sim
                     if fixed_label is not None:
                         out.append(fixed_label) # Seg

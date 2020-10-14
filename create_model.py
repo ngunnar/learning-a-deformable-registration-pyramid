@@ -26,7 +26,8 @@ from neuron.layers import VecInt, Negate
 import tensorflow as tf
 import numpy as np
 
-def create_model(config, name):
+
+def create_model(config, name, task):
     
     def w_loss(loss):
         def l(_, yp):
@@ -37,7 +38,6 @@ def create_model(config, name):
     
     useDenseNet = config['use_dense_net']
     useContextNet = config['use_context_net']
-    #batch_size = None#config['batch_size']
     depth = config['depth']
     height = config['height']
     width = config['width']
@@ -50,12 +50,10 @@ def create_model(config, name):
     use_def = config['use_def']
     
     d_l = config['data_loss']
-    assert d_l in ['mse', 'cc', 'ncc', 'mse_ncc'], 'Loss should be one of mse or cc, found %s' % data_loss
+    assert d_l in ['mse', 'cc', 'ncc'], 'Loss should be one of mse or cc, found %s' % data_loss
     
     if d_l in ['ncc', 'cc']:
-        d_l = losses.NCC().loss
-    elif d_l == 'mse_ncc':
-        d_l = losses.NCC().loss_with_mse
+        d_l = losses.NCC(task=task).loss
     else:
         #d_l = tf.keras.losses.MeanSquaredError(reduction='none')
         d_l = tf.keras.losses.MeanSquaredError()
@@ -78,7 +76,8 @@ def create_model(config, name):
             warps_1.append(Warp(name='warp1_{0}'.format(i+1)))
             warps_2.append(Warp(name='warp2_{0}'.format(i+1)))
             first = False
-        flow_ests.append(OpticalFlowEstimator(i=i, gamma=gamma, denseNet= useDenseNet, first = first))
+        if use_def:
+            flow_ests.append(OpticalFlowEstimator(i=i, gamma=gamma, denseNet= useDenseNet, first = first))
         if use_affine:
             affines.append(Affine(i=i))
         if i != last:
@@ -120,15 +119,19 @@ def create_model(config, name):
             warp = out2[l]
         
         if use_affine:
+            #cv = cost([out1[l], warp])
+            #a_flow = affines[l]([warp, cv, flow])
+            zero_flow = Lambda(lambda x: tf.zeros(x, dtype='float32'))((batch_size, *shape))
             a_flow = affines[l]([out1[l], warp])
-            flow = TransformAffineFlow(shape)([a_flow, flow])
+            flow = TransformAffineFlow(shape)([a_flow, zero_flow]) #TransformAffineFlow(shape)([a_flow, flow])
             warp = warps_2[l]([warp, flow])
             flow = Lambda(lambda x:x, name = "est_aff_flow{0}".format(l))(flow)
-            outputs.append(flow)
-            loss.append(losses.Grad('l2').loss)
-            loss_weights.append(config['alphas'][l])
+            if l != 0 or use_def == True:
+                outputs.append(a_flow)
+                loss.append(losses.Affine_loss().loss)
+                loss_weights.append(config['alphas'][l])
         
-        if use_def or l == 0:
+        if use_def:
             cv = cost([out1[l], warp])
         
             if i != 1 and use_def:
@@ -141,12 +144,14 @@ def create_model(config, name):
             elif i == last:
                 flow = contexs[0]([upfeat, flow])     
         
-        flow = Lambda(lambda x:x, name = "est_flow{0}".format(l))(flow)
+        if use_def:
+            flow = Lambda(lambda x:x, name = "est_flow{0}".format(l))(flow)
         
         if l != 0:
-            outputs.append(flow)
-            loss.append(losses.Grad('l2').loss)
-            loss_weights.append(config['betas'][l])
+            if use_def:
+                outputs.append(flow)
+                loss.append(losses.Grad('l2').loss)
+                loss_weights.append(config['betas'][l])
             r = Resize(scalar = 1.0, factor = 1/(2**l), name='p_score_{0}'.format(l))
             warp_moving = Warp(name='warp_m_{0}'.format(i+1))([r(moving), flow])
             #o = Concatenate(axis=-1, name='sim_{0}'.format(l))([out1[l], warp])
@@ -162,28 +167,39 @@ def create_model(config, name):
     
     flow_est = flow
     flow_int = VecInt(method='ss', name='flow_int', int_steps=7)(flow_est)
-    #flow_neg = Negate()(flow_est)
-    #flow_neg = VecInt(method='ss', name='neg_flow-int', int_steps=7)(flow_neg)
     
     warped = Warp(name='sim')([moving, flow_est])    
     outputs.append(flow_est)
     loss.append(losses.Grad('l2').loss)
-    loss_weights.append(config['betas'][0])
-    
+    if use_def:
+        loss_weights.append(config['betas'][0])
+    else:
+        loss_weights.append(config['alphas'][0])
     outputs.append(warped)
     loss.append(d_l)
     loss_weights.append(config['reg_params'][0])
     
     if use_atlas:
-        warped_moving_seg = Warp(name='seg')([moving_seg, flow_int])
+        warped_moving_seg = Warp(name='seg')([moving_seg, flow_est])
         outputs.append(warped_moving_seg)
         loss.append(losses.Dice().loss)
         loss_weights.append(config['atlas_wt'])
     
     return Model(inputs=inputs, outputs=outputs, name=name), loss, loss_weights
 
-
 if __name__ == "__main__":
-    config = {'use_dense_net':True, 'use_context_net':True, 'batch_size':10, 'depth':256, 'height':256, 'width':256, 'gamma': 1e-5, 'lowest': 4, 'last':1}
-    pwc_model = create_model(config = config, name="PWC_Net")
-    print(pwc_model.summary())
+    config = {'use_dense_net':True, 
+              'use_context_net':True,
+              'use_atlas':True,
+              'use_affine':True,
+              'use_def':True,
+              'batch_size':10,
+              'depth':256,
+              'height':256, 
+              'width':256,
+              'gamma': 1e-5,
+              'cost_search_range':2,
+              'lowest': 4,
+              'last':1}
+    model,_,_ = create_model(config = config, name="Model")
+    print(model.summary())

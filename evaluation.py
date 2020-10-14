@@ -12,9 +12,9 @@ from surface_distance import *
 
 ##### paths #####
 
-DEFAULT_INPUT_PATH = Path("./submission_compressed/")
+DEFAULT_INPUT_PATH = Path("./submission_test/")
 #DEFAULT_GROUND_TRUTH_PATH = Path("/opt/evaluation/ground-truth/")
-DEFAULT_GROUND_TRUTH_PATH = Path("/data/Niklas/Learn2Reg")
+DEFAULT_GROUND_TRUTH_PATH = Path("/data/Niklas/Learn2Reg/Test")
 DEFAULT_EVALUATION_OUTPUT_FILE_PATH = Path("./output/metrics.json")
 
 ##### metrics #####
@@ -196,7 +196,7 @@ class EvalVal():
         cases = None
   
         for _, row in self.pairs_task_01.iterrows():
-            case = self.nifti_loader.load(fname=DEFAULT_GROUND_TRUTH_PATH / 'task_01' / 'EASY-RESECT' / 'NIFTI' / 'Case{}'.format(row['fixed']) / 'Case{}-FLAIR-resize.nii'.format(row['fixed']))
+            case = self.nifti_loader.load(fname=DEFAULT_GROUND_TRUTH_PATH / 'task_01' / 'NIFTI' / 'Case{}'.format(row['fixed']) / 'Case{}-FLAIR-resize.nii'.format(row['fixed']))
         
             if cases is None:
                 cases = case
@@ -268,7 +268,7 @@ class EvalVal():
         cases = None
         
         for _, row in self.pairs_task_01.iterrows():
-            case = self.curious_lms_loader.load(fname=DEFAULT_GROUND_TRUTH_PATH / 'task_01' / 'EASY-RESECT' / 'landmarks' / 'Coordinates' / 'Case{}-MRI-beforeUS.tag'.format(row['fixed']))
+            case = self.curious_lms_loader.load(fname=DEFAULT_GROUND_TRUTH_PATH / 'task_01' / 'landmarks' / 'Coordinates' / 'Case{}-MRI.tag'.format(row['fixed']))
         
             if cases is None:
                 cases = [case]

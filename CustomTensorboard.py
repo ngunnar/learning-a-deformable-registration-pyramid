@@ -9,6 +9,30 @@ import numpy as np
 import re
 import copy
 
+def LR_scheduler(initial_lr, epochs):
+    
+    def scheduler(epoch, lr):
+        if epoch < epochs * 0.1:
+            return initial_lr
+        elif epoch < epochs * 0.2:
+            return initial_lr/2
+        elif epoch < epochs * 0.3:
+            return initial_lr/4
+        elif epoch < epochs * 0.4:
+            return initial_lr/8
+        elif epoch < epochs * 0.5:
+            return initial_lr/16
+        elif epoch < epochs * 0.6:
+            return initial_lr/2
+        elif epoch < epochs * 0.7:
+            return initial_lr/4
+        elif epoch < epochs * 0.8:
+            return initial_lr/8
+        else:
+            return initial_lr/16
+    
+    return tf.keras.callbacks.LearningRateScheduler(scheduler)
+
 def Tensorboard_callback(log_dir, config, ds, model):
     class CustomTensorBoard(TensorBoard):
         def __init__(self, **kwargs):  # add other arguments to __init__ if you need
@@ -16,7 +40,7 @@ def Tensorboard_callback(log_dir, config, ds, model):
         
         def on_epoch_end(self, epoch, logs={}):
             iterations = epoch * len(train_idxs)             
-            
+            logs.update({'lr': K.eval(self.model.optimizer.lr)})
             def image2d(img, axis):
                 if axis==0:
                     return img[0, img.shape[1]//2, :, :, 0]

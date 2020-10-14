@@ -16,10 +16,10 @@ class Task2Generator():
         pairs_task = load_pairs(dataset_root+'/pairs_val.csv')
         IDx = []
         for _, row in pairs_task.iterrows():
-            fixed = dataset_root+'/scans/case_{:03d}_insp.nii.gz'.format(row['fixed'])
-            moving = dataset_root+'/scans/case_{:03d}_exp.nii.gz'.format(row['moving'])
-            fixed_label = dataset_root+'/lungMasks/case_{:03d}_insp.nii.gz'.format(row['fixed'])
-            moving_label = dataset_root+'/lungMasks/case_{:03d}_exp.nii.gz'.format(row['moving'])
+            fixed = dataset_root+'/training/scans/case_{:03d}_exp.nii.gz'.format(row['fixed'])
+            moving = dataset_root+'/training/scans/case_{:03d}_insp.nii.gz'.format(row['moving'])
+            fixed_label = dataset_root+'/training/lungMasks/case_{:03d}_exp.nii.gz'.format(row['fixed'])
+            moving_label = dataset_root+'/training/lungMasks/case_{:03d}_insp.nii.gz'.format(row['moving'])
             IDx.append([[fixed, fixed_label, [0, None]],
                         [moving, moving_label, [0, None]],
                         -1, None, Task2Generator.get_task_number()])
@@ -30,10 +30,11 @@ class Task2Generator():
         pairs_task = load_pairs(dataset_root+'/pairs_val.csv')
         IDx = []
         for _, row in pairs_task.iterrows():
-            fixed = dataset_root+'/training/scans/case_{:03d}_insp.nii.gz'.format(row['fixed'])
-            moving = dataset_root+'/training/scans/case_{:03d}_exp.nii.gz'.format(row['moving'])
-            fixed_label = dataset_root+'/training/lungMasks/case_{:03d}_insp.nii.gz'.format(row['fixed'])
-            moving_label = dataset_root+'/training/lungMasks/case_{:03d}_exp.nii.gz'.format(row['moving'])
+            fixed = dataset_root+'/training/scans/case_{:03d}_exp.nii.gz'.format(row['fixed'])
+            moving = dataset_root+'/training/scans/case_{:03d}_insp.nii.gz'.format(row['fixed'])
+            fixed_label = dataset_root+'/training/lungMasks/case_{:03d}_exp.nii.gz'.format(row['fixed'])
+            moving_label = dataset_root+'/training/lungMasks/case_{:03d}_insp.nii.gz'.format(row['fixed'])
+            
             IDx.append([[fixed, fixed_label, [0, None]],
                         [moving, moving_label, [0, None]],
                         -1, None, Task2Generator.get_task_number()])
@@ -41,6 +42,7 @@ class Task2Generator():
     
     def get_train_idx(dataset_root, use_atlas = True):
         dataset_root = dataset_root + '/task_02'
+        pairs_task = load_pairs(dataset_root+'/pairs_val.csv')
         allInsp = [f for f in glob.glob(dataset_root + '/training/scans/case_*insp.nii.gz', recursive= True)]
         allInsp.sort()
         allExp = [f for f in glob.glob(dataset_root + '/training/scans/case_*exp.nii.gz', recursive= True)]
@@ -56,6 +58,8 @@ class Task2Generator():
             number = re.findall('\d+', label)[-1]
             insp_img = [s for s in allInsp if number in s]
             assert len(insp_img) == 1
+            if int(number) in pairs_task.values[:,0]:
+                continue
             for l in allExp_Label:
                 n = re.findall('\d+', l)[-1]
                 if n != number:
@@ -64,16 +68,16 @@ class Task2Generator():
                 assert len(exp_img) == 1
                 for flip_ax in range(-1,3):
                     if use_atlas:
-                        IDx.append([[insp_img[0], label, [0, None]], 
-                                    [exp_img[0], l, [0, None]],
-                                    flip_ax, None, Task2Generator.get_task_number()])
+                        #IDx.append([[insp_img[0], label, [0, None]], 
+                        #            [exp_img[0], l, [0, None]],
+                        #            flip_ax, None, Task2Generator.get_task_number()])
                         IDx.append([[exp_img[0], l, [0, None]], 
                                     [insp_img[0], label, [0, None]], 
                                     flip_ax, None, Task2Generator.get_task_number()])
                     else:
-                        IDx.append([[insp_img[0], None, [0, None]], 
-                                    [exp_img[0], None, [0, None]], 
-                                    flip_ax, None])
+                        #IDx.append([[insp_img[0], None, [0, None]], 
+                        #            [exp_img[0], None, [0, None]], 
+                        #            flip_ax, None])
                         IDx.append([[exp_img[0], None, [0, None]], 
                                     [insp_img[0], None, [0, None]],
                                     flip_ax, None, Task2Generator.get_task_number()])
