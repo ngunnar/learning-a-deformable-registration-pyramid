@@ -5,6 +5,8 @@ In this repository we show the implementation of a machine learning medical imag
 We are using Tensorflow 2.0.2. To install all necessary libaries run:
 ```
 conda env create --file environment.yml
+
+conda activate tf2
 ```
 
 ## Architecture
