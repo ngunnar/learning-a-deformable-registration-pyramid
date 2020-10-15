@@ -122,12 +122,12 @@ def create_model(config, name):
             #cv = cost([out1[l], warp])
             #a_flow = affines[l]([warp, cv, flow])
             zero_flow = Lambda(lambda x: tf.zeros(x, dtype='float32'))((batch_size, *shape))
-            a_flow = affines[l]([out1[l], warp])
-            flow = TransformAffineFlow(shape)([a_flow, zero_flow]) #TransformAffineFlow(shape)([a_flow, flow])
-            warp = warps_2[l]([warp, flow])
-            flow = Lambda(lambda x:x, name = "est_aff_flow{0}".format(l))(flow)
+            A = affines[l]([out1[l], warp])
+            a_flow = TransformAffineFlow(shape)([A, zero_flow])
+            flow = TransformAffineFlow(shape)([A, flow])
+            warp = warps_2[l]([warp, a_flow])
             if l != 0 or use_def == True:
-                outputs.append(a_flow)
+                outputs.append(A)
                 loss.append(Affine_loss().loss)
                 loss_weights.append(config['alphas'][l])
         
