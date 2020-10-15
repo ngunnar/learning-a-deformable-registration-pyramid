@@ -1,17 +1,12 @@
 import argparse
-
-from create_model import create_model
 import tensorflow as tf
-import losses
-from DataGenerators import Task1Generator, Task2Generator, Task3Generator, Task4Generator, MergeDataGenerator
 from datetime import datetime
-import losses
-
-from CustomTensorboard import Tensorboard_callback, LR_scheduler
 import tensorflow.keras.backend as K
-
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]="0,2"
+
+from src.create_model import create_model
+from src.DataGenerators import Task1Generator, Task2Generator, Task3Generator, Task4Generator, MergeDataGenerator
+from src.CustomTensorboard import Tensorboard_callback, LR_scheduler
 
 task = [3]
 use_atlas = True
@@ -98,7 +93,7 @@ def main(dataset_root)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-ds", help="dataset root", type=str)
+    parser.add_argument("-ds", help="dataset root", type=str, required=True)
     parser.add_argument("-gpus", help="use gpus, example -1 (for cpu), 0 for gpu 0, 0,1,2 for gpu 0,1,2", type=str, default="1,2,3,4")
     args = parser.parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"]=args.gpus

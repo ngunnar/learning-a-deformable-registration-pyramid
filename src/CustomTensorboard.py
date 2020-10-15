@@ -1,6 +1,6 @@
 from tensorflow.python.ops import summary_ops_v2
 from tensorflow.keras.callbacks import TensorBoard, ModelCheckpoint, LearningRateScheduler, Callback, LambdaCallback
-from CustomLayers.WarpLayer import Warp
+from .CustomLayers.WarpLayer import Warp
 import matplotlib.pyplot as plt
 import os, math, io, time
 import tensorflow.keras.backend as K

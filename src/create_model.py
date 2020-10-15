@@ -1,22 +1,22 @@
 import sys
-sys.path.append('./ext/neuron')
-sys.path.append('./ext/pytools-lib')
-sys.path.append('./ext/pytools-lib/pynd')
-sys.path.append('./ext/pytools-lib/pytools')
+sys.path.append('./src/ext/neuron')
+sys.path.append('./src/ext/pytools-lib')
+sys.path.append('./src/ext/pytools-lib/pynd')
+sys.path.append('./src/ext/pytools-lib/pytools')
 
 import tensorflow as tf
 import numpy as np
-from CustomLayers.PyramidLayer import Pyramid
-from CustomLayers.WarpLayer import Warp
-from CustomLayers.OpticalFlowEstimatorLayer import OpticalFlowEstimator
-from CustomLayers.CostVolumeLayer import CostVolume
-from CustomLayers.UpsamplingLayer import Upsampling
-from CustomLayers.ContextLayer import Context
-from CustomLayers.ResizeLayer import Resize
-from CustomLayers.AffineLayer import Affine
-from CustomLayers.TransformAffineFlowLayer import TransformAffineFlow
+from .CustomLayers.PyramidLayer import Pyramid
+from .CustomLayers.WarpLayer import Warp
+from .CustomLayers.OpticalFlowEstimatorLayer import OpticalFlowEstimator
+from .CustomLayers.CostVolumeLayer import CostVolume
+from .CustomLayers.UpsamplingLayer import Upsampling
+from .CustomLayers.ContextLayer import Context
+from .CustomLayers.ResizeLayer import Resize
+from .CustomLayers.AffineLayer import Affine
+from .CustomLayers.TransformAffineFlowLayer import TransformAffineFlow
 from tensorflow.keras.layers import Concatenate
-import losses
+from .losses import NCC, Affine_loss, Grad, Dice
 
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Lambda
@@ -53,7 +53,7 @@ def create_model(config, name):
     assert d_l in ['mse', 'cc', 'ncc'], 'Loss should be one of mse or cc, found %s' % data_loss
     
     if d_l in ['ncc', 'cc']:
-        d_l = losses.NCC().loss
+        d_l = NCC().loss
     else:
         #d_l = tf.keras.losses.MeanSquaredError(reduction='none')
         d_l = tf.keras.losses.MeanSquaredError()
@@ -128,7 +128,7 @@ def create_model(config, name):
             flow = Lambda(lambda x:x, name = "est_aff_flow{0}".format(l))(flow)
             if l != 0 or use_def == True:
                 outputs.append(a_flow)
-                loss.append(losses.Affine_loss().loss)
+                loss.append(Affine_loss().loss)
                 loss_weights.append(config['alphas'][l])
         
         if use_def:
@@ -150,7 +150,7 @@ def create_model(config, name):
         if l != 0:
             if use_def:
                 outputs.append(flow)
-                loss.append(losses.Grad('l2').loss)
+                loss.append(Grad('l2').loss)
                 loss_weights.append(config['betas'][l])
             r = Resize(scalar = 1.0, factor = 1/(2**l), name='p_score_{0}'.format(l))
             warp_moving = Warp(name='warp_m_{0}'.format(i+1))([r(moving), flow])
@@ -170,7 +170,7 @@ def create_model(config, name):
     
     warped = Warp(name='sim')([moving, flow_est])    
     outputs.append(flow_est)
-    loss.append(losses.Grad('l2').loss)
+    loss.append(Grad('l2').loss)
     if use_def:
         loss_weights.append(config['betas'][0])
     else:
@@ -182,7 +182,7 @@ def create_model(config, name):
     if use_atlas:
         warped_moving_seg = Warp(name='seg')([moving_seg, flow_est])
         outputs.append(warped_moving_seg)
-        loss.append(losses.Dice().loss)
+        loss.append(Dice().loss)
         loss_weights.append(config['atlas_wt'])
     
     return Model(inputs=inputs, outputs=outputs, name=name), loss, loss_weights
