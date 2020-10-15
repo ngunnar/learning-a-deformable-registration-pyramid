@@ -1,4 +1,4 @@
-# learning-a-deformable-registration-pyramid
+# Learning a Deformable Registration Pyramid
 In this repository we show the implementation of a machine learning medical image registration method. The method was submitted to the [Learn2Reg 2020 Challenge](https://learn2reg.grand-challenge.org/). The method is based on 3D downsampled CNN pyramid wherein displacement fields are estimated and refined at each level.
 
 ## Environment
@@ -20,7 +20,6 @@ Description of the components:
 - <strong>Cost volume (CV):</strong> Correlation between the warped feature maps from the moving image and feature maps from the fixed image. For computational reasons the cost volume is restricted to the voxel neighbourhood.
 - <strong>Deform (D):</strong> A CNN that estimates the displacement field based on the affine displacement field, the cost volume and the feature maps from the fixed image.
 - <strong>Upsample (U):</strong> Upsamples the estimated displacement field from one level to the next.
-\end{itemize}
 
 ## Result
 TBD
