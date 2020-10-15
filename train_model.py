@@ -23,7 +23,7 @@ config = {
     'use_context_net': False,
     'val_split':0,
     'epochs':1000,
-    'lr':1e-4,
+    'lr':5e-5,
     'weights': None,
     'use_atlas': use_atlas,
     'atlas_wt': 1.0,
@@ -37,10 +37,11 @@ config = {
     'dataset_root': []
 }
 
-config['betas'] = [1.0, 0.25, 0.05, 0.0125, 0.002]
 config['alphas'] = [1.0, 0.25, 0.05, 0.0125, 0.002]
-config['betas'] = [i for i in config['alphas']]
-config['alphas'] = [i*3 for i in config['alphas']]
+config['betas'] = [1.0, 0.25, 0.05, 0.0125, 0.002]
+
+config['alphas'] = [i for i in config['alphas']]
+config['betas'] = [i*3 for i in config['alphas']]
 
 config['reg_params'] = [1.0, 0.10, 0.05, 0.02, 0.01]
 config['reg_params'] = [i for i in config['reg_params']]

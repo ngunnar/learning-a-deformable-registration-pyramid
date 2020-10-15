@@ -46,25 +46,31 @@ To run the traning and testing script we assuming the datasets are organized lik
 |   +-- Training
 +-- Test
 |    +-- task_01
-     |    +-- pairs_val.csv
-     |    +-- NIFTI
+|    |    +-- pairs_val.csv
+|    |    +-- NIFTI
 |    +-- task_02
-     |   +-- Training
+|    |   +-- Training
 |    +-- task_03
-     |   +-- Training
+|    |   +-- Training
 |    +-- task_04
-     |   +-- Training
+|    |   +-- Training
 ```
 ## Training
 Train the model using images (and segmentations) for Task 2, 3 and 4 run
 ```
-python train_model.py -ds {path to dataset root} -gpus 0,1,2
+python train_model.py -ds {path to dataset root} -gpus {gpu numbers}
+
+ex:
+python train_model.py -ds /data/Learn2Reg/ -gpus 0,1,2
 ```
 
 To fine tune the model on a specific task run:
 
 ```
-python train_tf_task{TASK #}.py -ds {path to dataset root} -gpus 0,1,2
+python train_tf_task{TASK #}.py -ds {path to dataset root} -gpus {gpu numbers}
+
+ex:
+python train_tf_task2.py -ds /data/Learn2Reg/ -gpus 0,1,2
 ```
 
 or feel free to modify, create your own training procedure

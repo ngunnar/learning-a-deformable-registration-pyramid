@@ -39,7 +39,7 @@ config = {
 config['alphas'] = [1.0, 0.25, 0.05, 0.0125, 0.002]
 config['betas'] = [1.0, 0.25, 0.05, 0.0125, 0.002]
 
-config['alphas'] = [i*0.1 for i in config['alphas']]
+config['alphas'] = [i for i in config['alphas']]
 config['betas'] = [i*3 for i in config['betas']]
 if config['data_loss'] == 'mse':
     config['reg_params'] = [50.0, 5.0, 2.5, 1.0, 0.5]
