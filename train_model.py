@@ -21,7 +21,7 @@ config = {
     'batch_size': 1,
     'ds_size':700,
     'use_affine': True,
-    'use_def': False,
+    'use_def': True,
     'use_dense_net': True,    
     'use_context_net': False,
     'val_split':0,
