@@ -13,9 +13,9 @@ task = [2,3,4]
 use_atlas = True
 config = {
     # Training setup
-    'epochs':100,
-    'lr':5e-5,
-    'weights': './Models/pretrained_best',
+    'epochs':500,
+    'lr':1e-4,
+    'weights': None,
     'batch_size': 1,
     # Data 
     'depth': 64,
@@ -48,8 +48,8 @@ config = {
 config['alphas'] = [1.0, 2.0, 4.0, 8.0, 16.0]
 config['betas'] = [1.0, 0.5, 0.25, 0.125, 0.0625]
 
-config['alphas'] = [i for i in config['alphas']]
-config['betas'] = [i*10 for i in config['betas']]
+config['alphas'] = [i*0 for i in config['alphas']]
+config['betas'] = [i*2 for i in config['betas']]
 
 config['gamma'] = [1.0, 0.5, 0.25, 0.125, 0.0625]
 config['gamma'] = [i*5 for i in config['gamma']]
@@ -69,7 +69,7 @@ def main(dataset_root):
         generators.append([Task4Generator, dataset_root])
         config['dataset_root'].append(dataset_root + '/task_04')
 
-    ds = MergeDataGenerator(generators, config, size=config['ds_size'], val_size = config['val_size'], shuffle=True)
+    ds = MergeDataGenerator(generators, config, size=config['ds_size'], pretrain_size=config['pretrain_size'], val_size = config['val_size'], shuffle=True)
     
     if tf.config.experimental.list_physical_devices('GPU'):
         strategy = tf.distribute.MirroredStrategy()
@@ -80,15 +80,15 @@ def main(dataset_root):
     log_dir = "{0}_{1}_{2}".format('task{0}'.format(''.join(map(str,task))), config['sim_loss'], dt)
 
     model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath='./Models/trained_best',
+        filepath='./Models/pretrained2_best',
         save_weights_only=True,
         monitor='loss',
         mode='min',
         save_best_only=True)
     
-    train_generator = ds.train_generator
+    train_generator = ds.pretrain_generator
     num_batches = int(len(train_generator.idxs)/config['batch_size'])
-    val_generator = None#ds.val_generator
+    val_generator = None #ds.val_generator
     with strategy.scope():
         model, loss, loss_weights = create_model(config = config, name="Model")
         if config['weights'] is not None:
@@ -99,10 +99,10 @@ def main(dataset_root):
         model.fit(train_generator.dataset,
                     callbacks = [tensorboard, model_checkpoint_callback],
                     epochs= config['epochs'], 
-                    steps_per_epoch = num_batches)
+                    steps_per_epoch = num_batches)#,
                     #validation_data = val_generator.dataset,
                     #validation_steps = int(len(val_generator.idxs)/config['batch_size']))
-        model.save_weights('./Models/trained_model')
+        model.save_weights('./Models/pretrained2_model')
 
 
 if __name__ == "__main__":

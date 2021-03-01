@@ -7,12 +7,12 @@ from tensorflow.keras.initializers import he_normal
 import tensorflow as tf
 
 class OpticalFlowEstimator(Layer):    
-    def __init__(self, i, gamma, denseNet, first = False,**kwargs):
+    def __init__(self, i, gamma, denseNet, filters, first = False,**kwargs):
         super(OpticalFlowEstimator, self).__init__(name='opt_flow_est_{0}'.format(i),**kwargs)
         #f = [128, 128, 96, 64, 32, 3]
         #f = [64, 64, 32, 16, 8, 3]
         self.i = i
-        self.filters = [64, 64, 32, 16, 8]
+        self.filters = filters#[64, 64, 32, 16, 8]
         self.first = first
         self.concatenate = Concatenate(axis = 4)
         self.dec = []

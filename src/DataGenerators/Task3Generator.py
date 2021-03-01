@@ -36,7 +36,7 @@ class Task3Generator():
                             -1, None, Task3Generator.get_task_number()])          
         return IDx
     
-    def get_train_idx(dataset_root, use_atlas = True):
+    def get_train_idx(dataset_root, use_atlas = True, flip = True, use_both = True):
         dataset_root = dataset_root + '/task_03'
         pairs_task = load_pairs(dataset_root+'/pairs_val.csv')
         allImages = [f for f in glob.glob(dataset_root + '/Training/img/*.nii.gz', recursive= True)]

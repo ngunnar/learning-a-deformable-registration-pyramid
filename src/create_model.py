@@ -21,11 +21,10 @@ from .losses import NCC, Affine_loss, Grad, Dice
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Lambda
 
-from neuron.layers import VecInt, Negate
-
 import tensorflow as tf
 import numpy as np
 
+from neuron.layers import VecInt
 
 def create_model(config, name):
     
@@ -36,20 +35,24 @@ def create_model(config, name):
             return loss(i, w)
         return l
     
+
+    lowest = config['lowest']
+    last = config['last']
+    pyramid_filters = config['pyramid_filters']
+    
     useDenseNet = config['use_dense_net']
     useContextNet = config['use_context_net']
     depth = config['depth']
     height = config['height']
     width = config['width']
-    gamma = config['gamma']
-    lowest = config['lowest']
-    last = config['last']
-    cost_search_range = config['cost_search_range']
+    d = config['d']
     use_atlas = config['use_atlas']
+    label_classes = config['label_classes']
     use_affine = config['use_affine']
     use_def = config['use_def']
+    deform_filters = config['deform_filters']
     
-    d_l = config['data_loss']
+    d_l = config['sim_loss']
     assert d_l in ['mse', 'cc', 'ncc'], 'Loss should be one of mse or cc, found %s' % data_loss
     
     if d_l in ['ncc', 'cc']:
@@ -59,8 +62,8 @@ def create_model(config, name):
         d_l = tf.keras.losses.MeanSquaredError()
     
     ## Initiazing Layers
-    pyramid = Pyramid(gamma=gamma, num = lowest)
-    cost = CostVolume(search_range=cost_search_range)
+    pyramid = Pyramid(gamma=0.001, num = lowest, filters=pyramid_filters)
+    cost = CostVolume(search_range=d)
     
     warps_1 = []
     warps_2 = []
@@ -77,14 +80,14 @@ def create_model(config, name):
             warps_2.append(Warp(name='warp2_{0}'.format(i+1)))
             first = False
         if use_def:
-            flow_ests.append(OpticalFlowEstimator(i=i, gamma=gamma, denseNet= useDenseNet, first = first))
+            flow_ests.append(OpticalFlowEstimator(i=i, gamma=0.001, denseNet= useDenseNet, filters=deform_filters, first = first))
         if use_affine:
             affines.append(Affine(i=i))
         if i != last:
-            ups.append(Upsampling(i=i, gamma= gamma))
+            ups.append(Upsampling(i=i, gamma= 0.001))
         
         if useContextNet or i == last:
-            contexs.append(Context(i=i, gamma=gamma))
+            contexs.append(Context(i=i, gamma= 0.001))
 
     ### Creating model ##
     fixed = tf.keras.layers.Input(shape=(depth, height, width, 1), name='fixed_img')
@@ -93,9 +96,9 @@ def create_model(config, name):
     
     inputs = [fixed, moving]
     if use_atlas:
-        moving_seg = tf.keras.layers.Input(shape=(depth, height, width, 1), name='moving_seg')
+        moving_seg = tf.keras.layers.Input(shape=(depth, height, width, label_classes), name='moving_seg')
         inputs.append(moving_seg)
-        
+    
     out1 = pyramid(fixed)
     out2 = pyramid(moving)
     
@@ -119,18 +122,18 @@ def create_model(config, name):
             warp = out2[l]
         
         if use_affine:
-            #cv = cost([out1[l], warp])
-            #a_flow = affines[l]([warp, cv, flow])
-            zero_flow = Lambda(lambda x: tf.zeros(x, dtype='float32'))((batch_size, *shape))
             A = affines[l]([out1[l], warp])
-            a_flow = TransformAffineFlow(shape)([A, zero_flow])
+            A = Lambda(lambda x:x, name = "A_flow{0}".format(l))(A)
+            outputs.append(A)
+            loss.append(Affine_loss().loss)
+            loss_weights.append(config['alphas'][l])
+            
             flow = TransformAffineFlow(shape)([A, flow])
-            warp = warps_2[l]([warp, a_flow])
-            if l != 0 or use_def == True:
-                outputs.append(A)
-                loss.append(Affine_loss().loss)
-                loss_weights.append(config['alphas'][l])
-        
+            #outputs.append(flow)
+            #loss.append(Grad(config['smooth_loss']).loss)
+            #loss_weights.append(config['alphas'][l])
+            warp = warps_2[l]([out2[l], flow]) #or warp, flow
+            
         if use_def:
             cv = cost([out1[l], warp])
         
@@ -142,48 +145,50 @@ def create_model(config, name):
             if useContextNet:
                 flow = contexs[l]([upfeat, flow])
             elif i == last:
-                flow = contexs[0]([upfeat, flow])     
+                flow = contexs[0]([upfeat, flow])
+            
+            flow = Lambda(lambda x:x, name = "def_flow{0}".format(l))(flow)
+            
+            outputs.append(flow)
+            loss.append(Grad(config['smooth_loss']).loss)
+            loss_weights.append(config['betas'][l])
         
-        if use_def:
-            flow = Lambda(lambda x:x, name = "est_flow{0}".format(l))(flow)
+        #if use_affine and use_def:
+        #    flow_final = TransformAffineFlow(shape)([A, flow_def])
+        #elif use_def:
+        #    flow_final = flow_def
+        #else:
+        #    zero_flow = Lambda(lambda x: tf.zeros(x, dtype='float32'))((batch_size, *shape))
+        #    flow_final = TransformAffineFlow(shape)([A, zero_flow])
         
+        #flow = Lambda(lambda x:x, name = "final_flow{0}".format(l))(flow)
         if l != 0:
-            if use_def:
-                outputs.append(flow)
-                loss.append(Grad('l2').loss)
-                loss_weights.append(config['betas'][l])
             r = Resize(scalar = 1.0, factor = 1/(2**l), name='p_score_{0}'.format(l))
             warp_moving = Warp(name='warp_m_{0}'.format(i+1))([r(moving), flow])
-            #o = Concatenate(axis=-1, name='sim_{0}'.format(l))([out1[l], warp])
             o = Concatenate(axis=-1, name='sim_{0}'.format(l))([r(fixed), warp_moving])
             outputs.append(o)
             loss.append(w_loss(d_l))
-            loss_weights.append(config['reg_params'][l])
+            loss_weights.append(config['gamma'][l])
         if l != 0:
             if use_def:
                 up_flow, up_feat = ups[l-1]([flow, upfeat])
             else:
                 up_flow = ups[l-1]([flow])
     
-    flow_est = flow
-    flow_int = VecInt(method='ss', name='flow_int', int_steps=7)(flow_est)
-    
-    warped = Warp(name='sim')([moving, flow_est])    
-    outputs.append(flow_est)
-    loss.append(Grad('l2').loss)
-    if use_def:
-        loss_weights.append(config['betas'][0])
-    else:
-        loss_weights.append(config['alphas'][0])
+    warped = Warp(name='sim')([moving, flow])    
     outputs.append(warped)
     loss.append(d_l)
-    loss_weights.append(config['reg_params'][0])
+    loss_weights.append(config['gamma'][0])
     
     if use_atlas:
-        warped_moving_seg = Warp(name='seg')([moving_seg, flow_est])
+        #flow_int = VecInt(method='ss', name='flow_int', int_steps=7)(flow)
+        #moving_seg = tf.one_hot(moving_seg, label_classes)
+        #if moving_seg.dtype != tf.int32:
+        #    moving_seg = tf.cast(moving_seg, tf.int32)
+        warped_moving_seg =  Warp(name='seg')([moving_seg, flow])
         outputs.append(warped_moving_seg)
-        loss.append(Dice().loss)
-        loss_weights.append(config['atlas_wt'])
+        loss.append(Dice(label_classes).loss)
+        loss_weights.append(config['lambda'])
     
     return Model(inputs=inputs, outputs=outputs, name=name), loss, loss_weights
 

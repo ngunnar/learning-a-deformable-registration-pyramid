@@ -15,6 +15,7 @@ class TensorflowDatasetLoader:
         lowest = config['lowest']
         last = config['last']
         use_label = config['use_atlas']
+        self.label_classes = config['label_classes']
         self.use_affine = config['use_affine']
         self.use_def = config['use_def']
         self.idxs = idxs
@@ -50,10 +51,10 @@ class TensorflowDatasetLoader:
         input_types = [tf.float32, tf.float32]
         input_shape = [(*self.input_dim,1),(*self.input_dim,1)]
         if use_label:
-            output_shape.append((*self.input_dim,1)) # seg
+            output_shape.append((*self.input_dim, self.label_classes)) # seg
             output_types.append(tf.float32)
             input_types.append(tf.float32)
-            input_shape.append((*self.input_dim,1))
+            input_shape.append((*self.input_dim, self.label_classes))
         input_data = tf.data.Dataset.from_generator(
             self.generator(self.input_dim, lowest, last, idxs, True),
             tuple(input_types),
@@ -66,7 +67,7 @@ class TensorflowDatasetLoader:
 
         dataset = tf.data.Dataset.zip((input_data, output_data))
         dataset = dataset.batch(batch_size)
-        dataset = dataset.shuffle(buffer_size=50)
+        dataset = dataset.shuffle(buffer_size=50, reshuffle_each_iteration=True)
         dataset = dataset.repeat()
         dataset = dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
         self.dataset = dataset 
@@ -77,7 +78,9 @@ class TensorflowDatasetLoader:
         moving = nib.load(m_f).get_fdata()
         if fl_f is not None and ml_f is not None:
             fixed_label = nib.load(fl_f).get_fdata().astype('int')
+            #fixed_label = tf.one_hot(fixed_label, np.max(fixed_label))
             moving_label = nib.load(ml_f).get_fdata().astype('int')
+            #moving_label = tf.one_hot(moving_label, np.max(moving_label))
         else:
             fixed_label, moving_label = None, None
         return [fixed, moving], [fixed_label, moving_label]
@@ -123,14 +126,19 @@ class TensorflowDatasetLoader:
             out = images, None
         return out
     
+    def get_one_hot(targets, nb_classes):
+        res = np.eye(nb_classes)[np.array(targets).reshape(-1)]
+        return res.reshape(list(targets.shape)+[nb_classes])
+    
     def _get_label(self, file, crop_img, rot_angle, rot_ax, flip_axes):
         label = nib.load(file).get_fdata().astype('int')
         if crop_img is not None:
             label = TensorflowDatasetLoader.crop(label, crop_img)
         label = TensorflowDatasetLoader.img_augmentation(label, rot_angle, rot_ax, flip_axes)
         assert not np.any(np.isnan(label)), file
-            
-        label = resize(label, self.input_dim, preserve_range=True, mode='constant')[...,None].astype('float32')
+        label = TensorflowDatasetLoader.get_one_hot(label, self.label_classes)
+        
+        label = np.round(resize(label, self.input_dim, preserve_range=True, mode='constant')).astype('float32')
         return label
     
     def _get_input_samples(self, idx):

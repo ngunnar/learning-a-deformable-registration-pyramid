@@ -4,11 +4,11 @@ from .CustomConvLayer import CustomConv
 from tensorflow.keras.layers import Layer
 
 class Pyramid(Layer):
-    def __init__(self, gamma, num,**kwargs):
+    def __init__(self, gamma, num, filters,**kwargs):
         super(Pyramid, self).__init__(name='pyramid',**kwargs)
         #f = [16, 32, 64, 96, 128, 196]
         #f = [4, 8, 16, 32, 64, 96]
-        self.filters = [16,32,32,32,32]
+        self.filters = filters#[16,32,32,32,32]
         assert num <= len(self.filters)
         self.num = num
         self.conv_a = []
